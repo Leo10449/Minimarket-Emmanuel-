@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123b35">
+<title>Minimarket Emmanuel | Control financiero</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.min.js"></script>
+<style>
+:root{--green:#123b35;--green2:#1e6557;--mint:#e9f4ef;--bg:#f5f7f6;--ink:#172522;--muted:#6c7975;--line:#e1e8e4;--white:#fff;--red:#a33b35;--gold:#a66a16}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:var(--green);color:#fff;padding:18px 16px 16px}header .wrap,.wrap{max-width:1080px;margin:auto}
+.brand{font-size:20px;font-weight:800;letter-spacing:.2px}.sub{font-size:12px;opacity:.78;margin-top:3px}
+main{max-width:1080px;margin:18px auto;padding:0 14px 40px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px #173b3210}
+h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 9px}
+.small{font-size:12px;color:var(--muted)}.muted{color:var(--muted)}
+.auth{max-width:430px;margin:26px auto}.field{display:flex;flex-direction:column;gap:5px;margin:0 0 11px}
+label{font-size:13px;font-weight:650;color:#34433e}
+input,select,textarea{width:100%;border:1px solid #ccd8d2;border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink);font:inherit;min-height:43px}
+input:focus,select:focus,textarea:focus{outline:2px solid #9ac9b6;border-color:var(--green2)}
+button{border:0;border-radius:10px;padding:11px 15px;background:var(--green2);color:#fff;font-weight:700;font:inherit;cursor:pointer}
+button.secondary{background:#edf3f0;color:var(--green)}button.danger{background:#fff0ef;color:var(--red)}
+button:disabled{opacity:.55;cursor:not-allowed}.full{width:100%}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.tabs{display:flex;gap:7px;overflow:auto;padding:4px 1px 12px;margin-bottom:6px}
+.tabs button{white-space:nowrap;background:#e7eeea;color:#29463e;padding:9px 12px;font-size:13px}
+.tabs button.active{background:var(--green);color:white}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:#f8faf9;border:1px solid var(--line);border-radius:13px;padding:13px}
+.stat .label{font-size:12px;color:var(--muted)}.stat .value{font-size:21px;font-weight:800;margin-top:5px;letter-spacing:-.4px}
+.green{color:#176447}.red{color:var(--red)}.gold{color:var(--gold)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:700;background:#fafcfb}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+.notice{background:#f1f7f4;border:1px solid #d9e9e1;padding:11px 12px;border-radius:11px;font-size:13px;color:#31564a}
+.error{background:#fff1f0;border:1px solid #f0d0cc;color:#8e2e28;padding:10px;border-radius:10px;font-size:13px;margin:8px 0}
+.success{background:#edf8f0;border:1px solid #cde8d3;color:#22643b;padding:10px;border-radius:10px;font-size:13px;margin:8px 0}
+.hidden{display:none!important}.right{text-align:right}.pill{display:inline-block;border-radius:99px;padding:3px 8px;background:#edf3f0;color:#35574a;font-size:11px;font-weight:700}
+footer{max-width:1080px;margin:0 auto;padding:0 14px 25px;color:var(--muted);font-size:11px}
+@media(max-width:720px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.stat .value{font-size:19px}main{margin-top:12px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="brand">Minimarket Emmanuel</div><div class="sub">Control financiero privado · Compras · Ventas · Cartera · Reinversión</div></div></header>
+<main>
+<section id="authBox" class="panel auth">
+  <h2>Ingresar a tu contabilidad</h2>
+  <p class="small">Esta herramienta es independiente de la tienda actual. Tus registros se guardan en tu cuenta privada.</p>
+  <div class="field"><label>Correo electrónico</label><input id="email" type="email" autocomplete="username" placeholder="Tu correo"></div>
+  <div class="field"><label>Contraseña</label><input id="password" type="password" autocomplete="current-password" placeholder="Tu contraseña"></div>
+  <div class="actions"><button id="loginBtn" class="full">Ingresar</button><button id="signupBtn" class="secondary full">Crear mi cuenta</button></div>
+  <div id="authMsg"></div>
+</section>
+
+<section id="appBox" class="hidden">
+  <div class="panel" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>Panel de control</strong><div class="small" id="userLabel"></div></div>
+    <button id="logoutBtn" class="secondary">Cerrar sesión</button>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="active" data-view="resumen">Resumen</button>
+    <button data-view="productos">Productos</button>
+    <button data-view="compras">Compras</button>
+    <button data-view="ventas">Ventas</button>
+    <button data-view="gastos">Gastos</button>
+    <button data-view="cartera">Cartera</button>
+    <button data-view="galletas">Galletas</button>
+    <button data-view="movimientos">Movimientos</button>
+  </nav>
+
+  <section id="view-resumen" class="view">
+    <div class="grid" id="stats"></div>
+    <div class="panel" style="margin-top:14px">
+      <h2>Separación de cuentas</h2>
+      <div class="two">
+        <div class="notice"><strong>Minimarket Emmanuel</strong><br>Mercancía propia, compras, ventas, cobros, gastos y reinversión.</div>
+        <div class="notice"><strong>Galletas de terceros</strong><br>El dinero de las ventas se registra aparte y no se suma a la ganancia de la tienda.</div>
+      </div>
+    </div>
+    <div class="panel"><h2>Inventario actual</h2><div id="stockSummary" class="tablewrap"></div></div>
+  </section>
+
+  <section id="view-productos" class="view hidden">
+    <div class="panel"><h2>Agregar producto propio</h2>
+      <form id="productForm">
+        <div class="formgrid">
+          <div class="field"><label>Nombre del producto</label><input name="nombre" required placeholder="Ej. Coca-Cola 400 ml"></div>
+          <div class="field"><label>Categoría</label><input name="categoria" value="bebidas"></div>
+          <div class="field"><label>Unidad</label><input name="unidad" value="unidad"></div>
+          <div class="field"><label>Costo unitario</label><input name="costo" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label>Precio de venta</label><input name="precio_venta" type="number" min="0" step="0.01" required></div>
+        </div><button>Guardar producto</button>
+      </form><div id="productMsg"></div>
+    </div>
+    <div class="panel"><h2>Mis productos</h2><div id="productsTable" class="tablewrap"></div></div>
+  </section>
+
+  <section id="view-compras" class="view hidden">
+    <div class="panel"><h2>Registrar compra de mercancía</h2>
+      <form id="purchaseForm">
+        <div class="formgrid">
+          <div class="field"><label>Fecha</label><input name="fecha" type="date" required></div>
+          <div class="field"><label>Producto</label><select name="producto" class="productSelect" required></select></div>
+          <div class="field"><label>Cantidad comprada</label><input name="cantidad" type="number" min="1" step="1" required></div>
+          <div class="field"><label>Costo por unidad</label><input name="costo" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label>Precio de venta por unidad</label><input name="precio" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label>Valor pagado al proveedor</label><input name="pagado" type="number" min="0" step="0.01" value="0" required></div>
+          <div class="field"><label>Medio de pago</label><select name="metodo"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="credito">Crédito / pendiente</option></select></div>
+          <div class="field"><label>Proveedor o nota</label><input name="descripcion" placeholder="Opcional"></div>
+        </div>
+        <p class="small" id="purchaseTotal">Total compra: $0</p><button>Guardar compra</button>
+      </form><div id="purchaseMsg"></div>
+    </div>
+  </section>
+
+  <section id="view-ventas" class="view hidden">
+    <div class="panel"><h2>Registrar venta propia</h2>
+      <form id="saleForm">
+        <div class="formgrid">
+          <div class="field"><label>Fecha</label><input name="fecha" type="date" required></div>
+          <div class="field"><label>Producto</label><select name="producto" class="productSelect" required></select></div>
+          <div class="field"><label>Cantidad vendida</label><input name="cantidad" type="number" min="1" step="1" required></div>
+          <div class="field"><label>Precio de venta por unidad</label><input name="precio" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label>Dinero recibido ahora</label><input name="pagado" type="number" min="0" step="0.01" value="0" required></div>
+          <div class="field"><label>Medio de pago recibido</label><select name="metodo"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="credito">Crédito / no recibido</option></select></div>
+          <div class="field"><label>Cliente o nota (opcional)</label><input name="descripcion"></div>
+        </div>
+        <p class="small" id="saleTotal">Total venta: $0</p><button>Guardar venta</button>
+      </form><div id="saleMsg"></div>
+    </div>
+  </section>
+
+  <section id="view-gastos" class="view hidden">
+    <div class="panel"><h2>Registrar gasto del negocio</h2>
+      <form id="expenseForm"><div class="formgrid">
+        <div class="field"><label>Fecha</label><input name="fecha" type="date" required></div>
+        <div class="field"><label>Concepto</label><select name="categoria"><option>Hielo</option><option>Transporte</option><option>Bolsas</option><option>Domicilios</option><option>Otro</option></select></div>
+        <div class="field"><label>Valor</label><input name="total" type="number" min="1" step="0.01" required></div>
+        <div class="field"><label>Descripción</label><input name="descripcion" placeholder="Opcional"></div>
+      </div><button>Guardar gasto</button></form><div id="expenseMsg"></div>
+    </div>
+  </section>
+
+  <section id="view-cartera" class="view hidden">
+    <div class="panel"><h2>Registrar abono de un cliente</h2>
+      <form id="collectionForm"><div class="formgrid">
+        <div class="field"><label>Venta pendiente</label><select name="venta" id="ownSaleSelect" required></select></div>
+        <div class="field"><label>Valor recibido</label><input name="total" type="number" min="1" step="0.01" required></div>
+        <div class="field"><label>Medio de pago</label><select name="metodo"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></div>
+        <div class="field"><label>Fecha</label><input name="fecha" type="date" required></div>
+      </div><button>Registrar abono</button></form><div id="collectionMsg"></div>
+    </div>
+    <div class="panel"><h2>Ventas pendientes por cobrar</h2><div id="receivablesTable" class="tablewrap"></div></div>
+  </section>
+
+  <section id="view-galletas" class="view hidden">
+    <div class="notice" style="margin-bottom:12px"><strong>Cuenta independiente.</strong> Las galletas pertenecen a otra persona. El dinero recaudado se entrega completo al propietario. La comisión queda fuera de las cuentas de la tienda.</div>
+    <div class="two">
+      <div class="panel"><h2>Registrar venta de galletas</h2>
+        <form id="cookieSaleForm"><div class="field"><label>Fecha</label><input name="fecha" type="date" required></div><div class="field"><label>Valor vendido</label><input name="total" type="number" min="1" step="0.01" required></div><div class="field"><label>Dinero recibido ahora</label><input name="pagado" type="number" min="0" step="0.01" value="0" required></div><div class="field"><label>Nota</label><input name="descripcion"></div><button>Guardar venta de galletas</button></form><div id="cookieSaleMsg"></div>
+      </div>
+      <div class="panel"><h2>Registrar recaudo de galletas</h2>
+        <form id="cookieCollectionForm"><div class="field"><label>Venta pendiente</label><select name="venta" id="cookieSaleSelect" required></select></div><div class="field"><label>Valor recibido</label><input name="total" type="number" min="1" step="0.01" required></div><div class="field"><label>Fecha</label><input name="fecha" type="date" required></div><button>Registrar recaudo</button></form><div id="cookieCollectionMsg"></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+        <h3>Entregar dinero al propietario</h3>
+        <form id="cookieHandoverForm"><div class="field"><label>Valor entregado</label><input name="total" type="number" min="1" step="0.01" required></div><div class="field"><label>Fecha</label><input name="fecha" type="date" required></div><button class="secondary">Registrar entrega</button></form><div id="cookieHandoverMsg"></div>
+      </div>
+    </div>
+    <div class="panel"><h2>Resumen de galletas</h2><div id="cookieSummary"></div></div>
+  </section>
+
+  <section id="view-movimientos" class="view hidden">
+    <div class="panel"><h2>Historial de movimientos</h2><div id="movementsTable" class="tablewrap"></div></div>
+  </section>
+</section>
+</main>
+<footer>Herramienta independiente. No modifica los pedidos, clientes, pagos ni inventario de la tienda actual. Mantén tu contraseña privada.</footer>
+<script>
+const SUPABASE_URL = "https://gcozcngjdlqkwnigmfun.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0BMaEPqzceHaSecw-3BzUw_etIWsK6C";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let products = [], movements = [], currentUser = null;
+const $ = (id)=>document.getElementById(id);
+const money = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(n||0));
+const today = ()=>new Date().toLocaleDateString('en-CA');
+const safe = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const msg = (id,text,ok=false)=>$(id).innerHTML = `<div class="${ok?'success':'error'}">${safe(text)}</div>`;
+function formData(form){return Object.fromEntries(new FormData(form).entries())}
+function setDates(){document.querySelectorAll('input[type=date]').forEach(x=>{if(!x.value)x.value=today()})}
+function showView(name){
+ document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));
+ $('view-'+name).classList.remove('hidden');
+ document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-view]');if(b)showView(b.dataset.view)});
+function calcDue(sale){
+ const collected=movements.filter(m=>m.tipo==='cobro' && m.referencia_id===sale.id).reduce((a,m)=>a+Number(m.total),0);
+ return Math.max(0,Number(sale.total)-Number(sale.pagado)-collected);
+}
+function stockFor(p){
+ let qty=0;
+ movements.forEach(m=>(m.detalle||[]).forEach(d=>{if(d.producto_id===p.id){if(m.tipo==='compra')qty+=Number(d.cantidad);if(m.tipo==='venta')qty-=Number(d.cantidad)}}));
+ return qty;
+}
+function inventoryCost(){return products.reduce((a,p)=>a+Math.max(0,stockFor(p))*Number(p.costo),0)}
+async function refresh(){
+ const [p,m]=await Promise.all([
+  db.from('emmanuel_fin_productos').select('*').order('nombre'),
+  db.from('emmanuel_fin_movimientos').select('*').order('fecha',{ascending:false}).order('created_at',{ascending:false})
+ ]);
+ if(p.error)throw p.error;if(m.error)throw m.error;
+ products=p.data||[];movements=m.data||[];
+ renderAll();
+}
+function renderAll(){
+ const ownSales=movements.filter(m=>m.tipo==='venta'&&m.cuenta==='propia');
+ const salesTotal=ownSales.reduce((a,m)=>a+Number(m.total),0);
+ const collected=ownSales.reduce((a,m)=>a+Number(m.pagado),0)+movements.filter(m=>m.tipo==='cobro'&&m.cuenta==='propia').reduce((a,m)=>a+Number(m.total),0);
+ const receivable=ownSales.reduce((a,m)=>a+calcDue(m),0);
+ const purchases=movements.filter(m=>m.tipo==='compra').reduce((a,m)=>a+Number(m.total),0);
+ const expenses=movements.filter(m=>m.tipo==='gasto').reduce((a,m)=>a+Number(m.total),0);
+ const soldCost=ownSales.reduce((a,m)=>a+(m.detalle||[]).reduce((b,d)=>b+Number(d.cantidad)*Number(d.costo_unitario),0),0);
+ const profit=salesTotal-soldCost-expenses;
+ $('stats').innerHTML=[
+  ['Ventas registradas',money(salesTotal),''],
+  ['Dinero cobrado',money(collected),'green'],
+  ['Cartera por cobrar',money(receivable),'gold'],
+  ['Ganancia estimada',money(profit),profit>=0?'green':'red'],
+  ['Compras registradas',money(purchases),''],
+  ['Gastos',money(expenses),'red'],
+  ['Costo de mercancía vendida',money(soldCost),''],
+  ['Valor del inventario',money(inventoryCost()),'']
+ ].map(x=>`<div class="stat"><div class="label">${x[0]}</div><div class="value ${x[2]}">${x[1]}</div></div>`).join('');
+ $('stockSummary').innerHTML=products.length?`<table><thead><tr><th>Producto</th><th>Existencia</th><th>Costo unit.</th><th>Precio venta</th><th>Ganancia/unid.</th></tr></thead><tbody>${products.map(p=>`<tr><td>${safe(p.nombre)}</td><td>${stockFor(p)}</td><td>${money(p.costo)}</td><td>${money(p.precio_venta)}</td><td>${money(Number(p.precio_venta)-Number(p.costo))}</td></tr>`).join('')}</tbody></table>`:'<p class="small" style="padding:10px">Todavía no hay productos registrados.</p>';
+ $('productsTable').innerHTML=products.length?`<table><thead><tr><th>Producto</th><th>Stock</th><th>Costo</th><th>Venta</th></tr></thead><tbody>${products.map(p=>`<tr><td>${safe(p.nombre)}</td><td>${stockFor(p)}</td><td>${money(p.costo)}</td><td>${money(p.precio_venta)}</td></tr>`).join('')}</tbody></table>`:'<p class="small" style="padding:10px">Sin productos todavía.</p>';
+ document.querySelectorAll('.productSelect').forEach(sel=>{const val=sel.value;sel.innerHTML='<option value="">Selecciona producto</option>'+products.filter(p=>p.activo).map(p=>`<option value="${p.id}">${safe(p.nombre)}</option>`).join('');if(products.some(p=>p.id===val))sel.value=val});
+ const ownDue=ownSales.filter(s=>calcDue(s)>0);
+ $('ownSaleSelect').innerHTML='<option value="">Selecciona una venta</option>'+ownDue.map(s=>`<option value="${s.id}">${safe(s.descripcion||'Venta')} · ${safe(s.fecha)} · Debe ${money(calcDue(s))}</option>`).join('');
+ const cookieSales=movements.filter(m=>m.tipo==='venta_galletas'&&calcDue(m)>0);
+ $('cookieSaleSelect').innerHTML='<option value="">Selecciona una venta</option>'+cookieSales.map(s=>`<option value="${s.id}">${safe(s.fecha)} · Pendiente ${money(calcDue(s))}</option>`).join('');
+ $('receivablesTable').innerHTML=ownDue.length?`<table><thead><tr><th>Fecha</th><th>Referencia</th><th>Total</th><th>Por cobrar</th></tr></thead><tbody>${ownDue.map(s=>`<tr><td>${safe(s.fecha)}</td><td>${safe(s.descripcion||'Venta')}</td><td>${money(s.total)}</td><td class="gold">${money(calcDue(s))}</td></tr>`).join('')}</tbody></table>`:'<p class="small" style="padding:10px">No hay ventas pendientes registradas.</p>';
+ const cookieSalesTotal=movements.filter(m=>m.tipo==='venta_galletas').reduce((a,m)=>a+Number(m.total),0);
+ const cookieCollected=movements.filter(m=>m.tipo==='venta_galletas').reduce((a,m)=>a+Number(m.pagado),0)+movements.filter(m=>m.tipo==='cobro'&&m.cuenta==='galletas').reduce((a,m)=>a+Number(m.total),0);
+ const cookieDue=movements.filter(m=>m.tipo==='venta_galletas').reduce((a,m)=>a+calcDue(m),0);
+ const cookieHanded=movements.filter(m=>m.tipo==='entrega_galletas').reduce((a,m)=>a+Number(m.total),0);
+ $('cookieSummary').innerHTML=`<div class="grid"><div class="stat"><div class="label">Ventas de galletas</div><div class="value">${money(cookieSalesTotal)}</div></div><div class="stat"><div class="label">Recaudado</div><div class="value green">${money(cookieCollected)}</div></div><div class="stat"><div class="label">Pendiente por recaudar</div><div class="value gold">${money(cookieDue)}</div></div><div class="stat"><div class="label">Entregado al propietario</div><div class="value">${money(cookieHanded)}</div></div></div><p class="small">Recaudado aún no entregado: ${money(cookieCollected-cookieHanded)}. La comisión externa no se registra como ingreso de la tienda.</p>`;
+ $('movementsTable').innerHTML=movements.length?`<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Cuenta</th><th>Detalle</th><th>Total</th></tr></thead><tbody>${movements.map(m=>`<tr><td>${safe(m.fecha)}</td><td>${safe(m.tipo.replaceAll('_',' '))}</td><td>${safe(m.cuenta)}</td><td>${safe(m.descripcion||m.categoria||'')}</td><td>${money(m.total)}</td></tr>`).join('')}</tbody></table>`:'<p class="small" style="padding:10px">Sin movimientos registrados.</p>';
+}
+async function insertMovement(data){
+ const {error}=await db.from('emmanuel_fin_movimientos').insert(data);
+ if(error)throw error;
+ await refresh();
+}
+$('loginBtn').onclick=async()=>{const email=$('email').value.trim(),password=$('password').value;const {error}=await db.auth.signInWithPassword({email,password});if(error)msg('authMsg',error.message);};
+$('signupBtn').onclick=async()=>{const email=$('email').value.trim(),password=$('password').value;if(!email||password.length<8){msg('authMsg','Escribe tu correo y una contraseña de al menos 8 caracteres.');return;}const {data,error}=await db.auth.signUp({email,password});if(error)msg('authMsg',error.message);else msg('authMsg',data.session?'Cuenta creada. Ya puedes ingresar.':'Cuenta creada. Revisa tu correo para confirmar el registro.',true);};
+$('logoutBtn').onclick=()=>db.auth.signOut();
+db.auth.onAuthStateChange(async(_event,session)=>{currentUser=session?.user||null;if(currentUser){$('authBox').classList.add('hidden');$('appBox').classList.remove('hidden');$('userLabel').textContent=currentUser.email||'';setDates();try{await refresh()}catch(e){msg('authMsg','No se pudieron cargar los datos: '+e.message)}}else{$('appBox').classList.add('hidden');$('authBox').classList.remove('hidden')}});
+$('productForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target);const {error}=await db.from('emmanuel_fin_productos').insert({nombre:d.nombre.trim(),categoria:d.categoria||'bebidas',unidad:d.unidad||'unidad',costo:Number(d.costo),precio_venta:Number(d.precio_venta)});if(error)msg('productMsg',error.message);else{e.target.reset();e.target.elements.categoria.value='bebidas';e.target.elements.unidad.value='unidad';msg('productMsg','Producto guardado.',true);await refresh()}};
+function updateProductForm(prefix){
+ const form=$(prefix+'Form');if(!form)return;
+ const select=form.elements.producto;const p=products.find(x=>x.id===select.value);
+ if(p){if(prefix==='purchase'){form.elements.costo.value=p.costo;form.elements.precio.value=p.precio_venta}else{form.elements.precio.value=p.precio_venta}}
+ const qty=Number(form.elements.cantidad.value||0),unit=Number(prefix==='purchase'?form.elements.costo.value:form.elements.precio.value||0);
+ $(prefix==='purchase'?'purchaseTotal':'saleTotal').textContent=(prefix==='purchase'?'Total compra: ':'Total venta: ')+money(qty*unit);
+}
+['purchase','sale'].forEach(prefix=>{const f=$(prefix+'Form');f.addEventListener('input',()=>updateProductForm(prefix));f.elements.producto.addEventListener('change',()=>updateProductForm(prefix))});
+$('purchaseForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target),p=products.find(x=>x.id===d.producto),q=Number(d.cantidad),cost=Number(d.costo),total=q*cost,pagado=Number(d.pagado);if(!p)return;if(pagado>total){msg('purchaseMsg','El valor pagado no puede superar el total.');return;}try{await insertMovement({fecha:d.fecha,tipo:'compra',cuenta:'propia',total,pagado,metodo:d.metodo,descripcion:d.descripcion,detalle:[{producto_id:p.id,nombre:p.nombre,cantidad:q,costo_unitario:cost,precio_venta:Number(d.precio)}]});msg('purchaseMsg','Compra guardada.',true);e.target.reset();setDates();}catch(err){msg('purchaseMsg',err.message)}};
+$('saleForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target),p=products.find(x=>x.id===d.producto),q=Number(d.cantidad),price=Number(d.precio),total=q*price,pagado=Number(d.pagado);if(!p)return;if(pagado>total){msg('saleMsg','El dinero recibido no puede superar el total.');return;}if(stockFor(p)<q){msg('saleMsg','No hay suficiente inventario registrado para esa cantidad.');return;}try{await insertMovement({fecha:d.fecha,tipo:'venta',cuenta:'propia',total,pagado,metodo:d.metodo,descripcion:d.descripcion,detalle:[{producto_id:p.id,nombre:p.nombre,cantidad:q,costo_unitario:Number(p.costo),precio_venta:price}]});msg('saleMsg','Venta guardada.',true);e.target.reset();setDates();}catch(err){msg('saleMsg',err.message)}};
+$('expenseForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target);try{await insertMovement({fecha:d.fecha,tipo:'gasto',cuenta:'propia',total:Number(d.total),pagado:Number(d.total),metodo:'otro',categoria:d.categoria,descripcion:d.descripcion});msg('expenseMsg','Gasto guardado.',true);e.target.reset();setDates()}catch(err){msg('expenseMsg',err.message)}};
+$('collectionForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target),sale=movements.find(m=>m.id===d.venta),amount=Number(d.total);if(!sale||amount>calcDue(sale)){msg('collectionMsg','El abono supera el saldo pendiente.');return;}try{await insertMovement({fecha:d.fecha,tipo:'cobro',cuenta:'propia',total:amount,pagado:0,metodo:d.metodo,referencia_id:sale.id,descripcion:'Abono de cliente'});msg('collectionMsg','Abono registrado.',true);e.target.reset();setDates()}catch(err){msg('collectionMsg',err.message)}};
+$('cookieSaleForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target),total=Number(d.total),pagado=Number(d.pagado);if(pagado>total){msg('cookieSaleMsg','El valor recibido no puede superar el total.');return;}try{await insertMovement({fecha:d.fecha,tipo:'venta_galletas',cuenta:'galletas',total,pagado,metodo:pagado?'efectivo':'credito',descripcion:d.descripcion||'Venta de galletas'});msg('cookieSaleMsg','Venta de galletas guardada por separado.',true);e.target.reset();setDates()}catch(err){msg('cookieSaleMsg',err.message)}};
+$('cookieCollectionForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target),sale=movements.find(m=>m.id===d.venta),amount=Number(d.total);if(!sale||amount>calcDue(sale)){msg('cookieCollectionMsg','El recaudo supera el saldo pendiente.');return;}try{await insertMovement({fecha:d.fecha,tipo:'cobro',cuenta:'galletas',total:amount,pagado:0,metodo:'efectivo',referencia_id:sale.id,descripcion:'Recaudo de galletas'});msg('cookieCollectionMsg','Recaudo registrado.',true);e.target.reset();setDates()}catch(err){msg('cookieCollectionMsg',err.message)}};
+$('cookieHandoverForm').onsubmit=async e=>{e.preventDefault();const d=formData(e.target),amount=Number(d.total),collected=movements.filter(m=>(m.tipo==='venta_galletas')).reduce((a,m)=>a+Number(m.pagado),0)+movements.filter(m=>m.tipo==='cobro'&&m.cuenta==='galletas').reduce((a,m)=>a+Number(m.total),0),handed=movements.filter(m=>m.tipo==='entrega_galletas').reduce((a,m)=>a+Number(m.total),0);if(amount>collected-handed){msg('cookieHandoverMsg','No puedes entregar más dinero del que has recaudado y aún no has entregado.');return;}try{await insertMovement({fecha:d.fecha,tipo:'entrega_galletas',cuenta:'galletas',total:amount,pagado:amount,metodo:'otro',descripcion:'Entrega al propietario de las galletas'});msg('cookieHandoverMsg','Entrega registrada.',true);e.target.reset();setDates()}catch(err){msg('cookieHandoverMsg',err.message)}};
+setDates();
+</script>
+</body>
+</html>
